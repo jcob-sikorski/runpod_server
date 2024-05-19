@@ -98,43 +98,43 @@ def upload_images_to_s3(images):
     return s3_uris
 
 def download_and_save_images(
-        uploadcare_uris: Dict[str, str], 
-        image_ids: Dict[str, str], 
-        image_formats: Dict[str, str], 
+        uploadcare_uris: List[str], 
+        image_ids: List[str], 
+        image_formats: List[str], 
         predefined_path: str) -> None:
     """
     Downloads and saves images based on image URIs and image IDs.
     Args:
-        uploadcare_uris (Dict[str, str]): Dictionary of image URIs.
-        image_ids (Dict[str, str]): Dictionary of image IDs.
+        uploadcare_uris (List[str]): List of 3 image URIs.
+        image_ids (List[str]): List of 3 image IDs.
         predefined_path (str): Predefined path to save the images.
     """
     print(f"DOWNLOADING AND SAVING IMAGES")
-    for key, uri in uploadcare_uris.items():
+    for i in range(3):
         print(f"GETTING IMAGE ID")
-        image_id = image_ids.get(key)
-        image_format = image_formats.get(key)
+        image_id = image_ids[i]
+        image_format = image_formats[i]
         
         if image_id:
             print(f"SETTING THE UNIQUE FILEPATH OF THE IMAGE")
             image_path = os.path.join(predefined_path, f"{image_id}.{image_format}")
             print(f"image_path: {image_path}")
             print(f"DOWNLOADING IMAGE")
-            response = requests.get(uri)
+            response = requests.get(uploadcare_uris[i])
             if response.status_code == 200:
                 print(f"WRITING IMAGE TO THE UNIQUE PATH")
                 with open(image_path, "wb") as f:
                     f.write(response.content)
                 print(f"Image saved at {image_path}")
             else:
-                print(f"Failed to download image from {uri}")
+                print(f"Failed to download image from {uploadcare_uris[i]}")
         else:
-            print(f"No image ID found for key: {key}")
+            print(f"No image ID found for key: {i}")
 
 def remove_images(
-        uploadcare_uris: Dict[str, str],
-        image_ids: Dict[str, str],
-        image_formats: Dict[str, str],
+        uploadcare_uris: List[str],
+        image_ids: List[str],
+        image_formats: List[str],
         predefined_path: str) -> None:
     """
     Removes images based on image IDs.
@@ -143,13 +143,13 @@ def remove_images(
         predefined_path (str): Predefined path where the images are stored.
     """
     print(f"REMOVING IMAGES")
-    for key, uri in uploadcare_uris.items():
+    for i in range(3):
         print(f"SETTING THE UNIQUE FILEPATH OF THE IMAGE")
         print(f"GETTING IMAGE ID")
-        image_id = image_ids.get(key)
+        image_id = image_ids[i]
 
         if image_id:
-            image_format = image_formats.get(key)
+            image_format = image_formats[i]
             image_path = os.path.join(predefined_path, f"{image_id}.{image_format}")
             try:
                 print(f"REMOVING AN IMAGE")
@@ -161,7 +161,7 @@ def remove_images(
 class Message(BaseModel):
     user_id: Optional[str] = None
     status: Optional[str] = None
-    uploadcare_uris: Optional[Dict[str, str]] = None
+    uploadcare_uris: Optional[List[str]] = None
     created_at: Optional[str] = None
     message_id: Optional[str] = None
     settings_id: Optional[str] = None
@@ -235,7 +235,7 @@ async def create_item(request: Request):
     await send_webhook_acknowledgment(user_id, message_id, settings_id, 'in progress', webhook_url)
 
     try:
-        predefined_path = '/workspace/images'
+        predefined_path = '/workspace/images/'
 
         download_and_save_images(uploadcare_uris, image_ids, image_formats, predefined_path)
 
