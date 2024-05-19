@@ -89,8 +89,8 @@ def upload_images_to_s3(images):
                 print("UPLOADING THE IMAGE")
                 s3_client.upload_fileobj(data, 'magicalcurie', image_key)
 
-            print(f"UPLOADED THE IMAGE: " + f's3://magicalcurie/{image_key}')
-            s3_uris.append(f's3://magicalcurie/{image_key}')
+            print(f"UPLOADED THE IMAGE: " + f'https://magicalcurie.s3.amazonaws.com/{image_key}')
+            s3_uris.append(f'https://magicalcurie.s3.amazonaws.com/{image_key}')
 
             # Remove the local image file
             os.remove(image_key)
