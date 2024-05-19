@@ -235,7 +235,7 @@ async def create_item(request: Request):
     await send_webhook_acknowledgment(user_id, message_id, settings_id, 'in progress', webhook_url)
 
     try:
-        predefined_path = 'C:\\Users\\Shadow\\Desktop'
+        predefined_path = '/workspace/images'
 
         download_and_save_images(uploadcare_uris, image_ids, image_formats, predefined_path)
 
