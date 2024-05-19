@@ -110,7 +110,7 @@ def download_and_save_images(
         predefined_path (str): Predefined path to save the images.
     """
     print(f"DOWNLOADING AND SAVING IMAGES")
-    for i in range(3):
+    for i in range(2):
         print(f"GETTING IMAGE ID")
         image_id = image_ids[i]
         image_format = image_formats[i]
@@ -143,7 +143,7 @@ def remove_images(
         predefined_path (str): Predefined path where the images are stored.
     """
     print(f"REMOVING IMAGES")
-    for i in range(3):
+    for i in range(2):
         print(f"SETTING THE UNIQUE FILEPATH OF THE IMAGE")
         print(f"GETTING IMAGE ID")
         image_id = image_ids[i]
