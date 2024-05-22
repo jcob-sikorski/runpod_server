@@ -41,9 +41,12 @@ def get_image(filename, subfolder, folder_type):
         return response.read()
 
 def get_history(prompt_id):
-    with urllib.request.urlopen("http://{}/history/{}".format(server_address, prompt_id)) as response:
-        print(f"GOT HISTORY FOR PROMPT ID {prompt_id}: {response.read()}")
-        return json.loads(response.read())
+    with urllib.request.urlopen(f"http://{server_address}/history/{prompt_id}") as response:
+        # Read response content
+        response_content = response.read()
+        print(f"GOT HISTORY FOR PROMPT ID {prompt_id}: {response_content}")
+        # Decode the JSON content
+        return json.loads(response_content)
 
 def get_images(ws, prompt):
     print("QUEUEING PROMPT")
@@ -71,7 +74,10 @@ def get_images(ws, prompt):
         history = get_history(prompt_id)[prompt_id]
 
         status = history['status']['status_str']
+        print(f"GENERATION STATUS: {status}")
+
         completed = history['status']['completed']
+        print(f"GENERATION COMPLETED: {completed}")
 
         if status == "success" and completed:
             for o in history['outputs']:
