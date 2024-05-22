@@ -110,22 +110,26 @@ def upload_images_to_s3(images):
     print("CONNECTED TO THE S3 CLIENT")
     s3_uris = []
 
-    for image_path in images:
-        print(f"GOT THE IMAGE PATH: {image_path}")
+    for filename in images:
+        print(f"GOT THE IMAGE PATH: {filename}")
+
+        temp_path = f"/workspace/LegitComfyUI/temp/{filename}"
+
+        print(f"FULL IMAGE PATH: {temp_path}")
 
         print("OPENING TMP SAVED IMAGE...")
-        with open(image_path, 'rb') as data:
+        with open(temp_path, 'rb') as data:
             print("OPENED IMAGE")
 
             print("UPLOADING THE IMAGE TO S3")
-            s3_client.upload_fileobj(data, 'magicalcurie', image_path)
+            s3_client.upload_fileobj(data, 'magicalcurie', temp_path)
 
-        print(f"UPLOADED THE IMAGE to S3: " + f'https://magicalcurie.s3.amazonaws.com/{image_path}')
-        s3_uris.append(f'https://magicalcurie.s3.amazonaws.com/{image_path}')
+        print(f"UPLOADED THE IMAGE to S3: " + f'https://magicalcurie.s3.amazonaws.com/{filename}')
+        s3_uris.append(f'https://magicalcurie.s3.amazonaws.com/{filename}')
 
         print("REMOVED THE LOCAL IMAGE FILE")
         # Remove the local image file
-        os.remove(image_path)
+        os.remove(temp_path)
 
     print(f"URIS FOR IMAGES UPLOADED TO S3: {s3_uris}")
     return s3_uris
