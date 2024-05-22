@@ -23,19 +23,26 @@ client_id = str(uuid.uuid4())
 server_address = "127.0.0.1:8188"
 
 def queue_prompt(prompt):
+    print("QUEUEING PROMPT")
     p = {"prompt": prompt, "client_id": client_id}
+    print(f"GOT THE PRMOPT {prompt}")
     data = json.dumps(p).encode('utf-8')
     req =  urllib.request.Request("http://{}/prompt".format(server_address), data=data)
+    print(f"SENT A REQUEST TO COMFY: {req}")
     return json.loads(urllib.request.urlopen(req).read())
 
 def get_image(filename, subfolder, folder_type):
+    print(f"GETTING IMAGE --filename: {filename} --subfolder: {subfolder} --folder_type: {folder_type}")
     data = {"filename": filename, "subfolder": subfolder, "type": folder_type}
     url_values = urllib.parse.urlencode(data)
+    print(f"URL VALUES: {url_values}")
     with urllib.request.urlopen("http://{}/view?{}".format(server_address, url_values)) as response:
+        print("READING RESPONSE")
         return response.read()
 
 def get_history(prompt_id):
     with urllib.request.urlopen("http://{}/history/{}".format(server_address, prompt_id)) as response:
+        print(f"GOT HISTORY FOR PROMPT ID {prompt_id}: {response.read()}")
         return json.loads(response.read())
 
 def get_images(ws, prompt):
@@ -45,23 +52,37 @@ def get_images(ws, prompt):
     while True:
         out = ws.recv()
         if isinstance(out, str):
+            print("IS AN INSTANCE - GETTING THE OUTPUT")
             message = json.loads(out)
+            print(f"OUTPUT MESSAGE: {message}")
             if message['type'] == 'executing':
+                print("MESSAGE TYPE IS EXECUTING")
                 data = message['data']
+                print(f"GOT MESSAGE DATA {data}")
                 if data['node'] is None and data['prompt_id'] == prompt_id:
+                    print("EXECUTION IS DONE")
                     break #Execution is done
         else:
+            print("IS NOT AN INSTANCE - CONTINUING POLLING")
             continue #previews are binary data
-
+    
+    print("GETTING THE HISTORY FOR THE REQUESTED PROMPT")
     history = get_history(prompt_id)[prompt_id]
     for o in history['outputs']:
+        print(f"GOT OUTPUT: {o}")
         for node_id in history['outputs']:
+            print(f"GOT NODE_ID {node_id}")
             node_output = history['outputs'][node_id]
+            print(f"NODE OUTPUT {node_output}")
             if 'images' in node_output:
+                print("IMAGES FOUND IN NODE OUPUT")
                 images_output = []
                 for image in node_output['images']:
+                    print(f"GOT AN IMAGE {image}")
                     image_data = get_image(image['filename'], image['subfolder'], image['type'])
                     images_output.append(image_data)
+            else:
+                print("IMAGES NOT FOUND IN NODE OUTPUT")
             output_images[node_id] = images_output
 
     print("GOT THE IMAGES")
@@ -72,26 +93,36 @@ def upload_images_to_s3(images):
     print("UPLOADING IMAGES TO S3")
     s3_client = boto3.client('s3')
 
+    print("CONNECTED TO THE S3 CLIENT")
     s3_uris = []
 
     for node_id in images:
+        print(f"GOT THE NODE: {node_id}")
         for image_data in images[node_id]:
+            print(f"GOT THE IMAGE DATA: {image_data}")
+
             image_key = str(uuid.uuid4()) + '.png'
+
+            print(f"GOT THE IMAGE KEY: {image_key}")
 
             image_array = cv2.imdecode(np.frombuffer(image_data, np.uint8), cv2.IMREAD_UNCHANGED)
             
-            print("SAVING IMAGE FILE TEMPORARILY")
+            print(f"SAVING IMAGE ARRAY TO: {image_key}")
 
             # Save the image as a PNG file
             cv2.imwrite(image_key, image_array)
 
+            print("OPENING TMP SAVED IMAGE...")
             with open(image_key, 'rb') as data:
-                print("UPLOADING THE IMAGE")
+                print("OPENED IMAGE")
+
+                print("UPLOADING THE IMAGE TO S3")
                 s3_client.upload_fileobj(data, 'magicalcurie', image_key)
 
-            print(f"UPLOADED THE IMAGE: " + f'https://magicalcurie.s3.amazonaws.com/{image_key}')
+            print(f"UPLOADED THE IMAGE to S3: " + f'https://magicalcurie.s3.amazonaws.com/{image_key}')
             s3_uris.append(f'https://magicalcurie.s3.amazonaws.com/{image_key}')
 
+            print("REMOVED THE LOCAL IMAGE FILE")
             # Remove the local image file
             os.remove(image_key)
 
@@ -109,27 +140,32 @@ def download_and_save_images(
         image_ids (List[str]): List of 3 image IDs.
         predefined_path (str): Predefined path to save the images.
     """
-    print(f"DOWNLOADING AND SAVING IMAGES")
+    print(f"DOWNLOADING AND SAVING OPTIONAL IPA IMAGES")
     for i in range(2):
-        print(f"GETTING IMAGE ID")
+        print(f"DOWNLOAD FOR IPA {i+1}...")
         image_id = image_ids[i]
+        print(f"GOT THE IMAGE ID: {image_id}")
+
         image_format = image_formats[i]
+        print(f"GOT THE IMAGE FORMAT: {image_format}")
         
         if image_id:
+            print("IMAGE ID IS DEFINED")
             print(f"SETTING THE UNIQUE FILEPATH OF THE IMAGE")
             image_path = os.path.join(predefined_path, f"{image_id}.{image_format}")
-            print(f"image_path: {image_path}")
-            print(f"DOWNLOADING IMAGE")
+
+            print(f"DOWNLOADING IMAGE FROM {image_path}")
             response = requests.get(uploadcare_uris[i])
+
             if response.status_code == 200:
-                print(f"WRITING IMAGE TO THE UNIQUE PATH")
+                print("GOT THE IPA IMAGE FROM UPLOADCARE")
                 with open(image_path, "wb") as f:
                     f.write(response.content)
-                print(f"Image saved at {image_path}")
+                print(f"SAVED IMAGE TO {image_path}")
             else:
-                print(f"Failed to download image from {uploadcare_uris[i]}")
+                print(f"FAILED TO GET UPLOADCARE IMAGE: {uploadcare_uris[i]}")
         else:
-            print(f"No image ID found for key: {i}")
+            print(f"NO IMAGE FOUND FOR IPA {i+1}")
 
 def remove_images(
         uploadcare_uris: List[str],
@@ -144,19 +180,22 @@ def remove_images(
     """
     print(f"REMOVING IMAGES")
     for i in range(2):
-        print(f"SETTING THE UNIQUE FILEPATH OF THE IMAGE")
         print(f"GETTING IMAGE ID")
         image_id = image_ids[i]
 
         if image_id:
+            print("IMAGE ID IS DEFINED")
+
             image_format = image_formats[i]
+            print(f"GOT THE IMAGE FORMAT: {image_format}")
+
             image_path = os.path.join(predefined_path, f"{image_id}.{image_format}")
             try:
-                print(f"REMOVING AN IMAGE")
+                print(f"REMOVING IMAGE FROM {image_path}...")
                 os.remove(image_path)
-                print(f"Image removed: {image_path}")
+                print(f"IMAGE REMOVED: {image_path}")
             except FileNotFoundError:
-                print(f"Image not found: {image_path}")
+                print(f"IMAGE FOR REMOVAL NOT FOUND: {image_path}")
 
 class Message(BaseModel):
     user_id: Optional[str] = None
@@ -188,7 +227,6 @@ async def send_webhook_acknowledgment(user_id: str,
     """
     print("SENDING WEBHOOK ACKNOWLEDGMENT")
     try:
-        print("CREATING DICTIONARY TO STORE THE FIELDS")
         # Create a dictionary to store the fields
         message_fields = {
             'user_id': user_id,
@@ -197,7 +235,11 @@ async def send_webhook_acknowledgment(user_id: str,
             'status': status
         }
 
+        print(f"CREATED DICTIONARY TO STORE THE FIELDS: {message_fields}")
+        
         if s3_uris is not None:
+            print("S3 URIS NOT NULL")
+
             print("ADDING S3_URIS FIELD TO MESSAGE MODEL")
             message_fields['s3_uris'] = s3_uris
 
@@ -209,11 +251,11 @@ async def send_webhook_acknowledgment(user_id: str,
         async with httpx.AsyncClient() as client:
             response = await client.post(webhook_url, json=message.__dict__)
             if response.status_code == 200:
-                print("Webhook request successful!")
+                print("WEBHOOK POST REQUEST WAS SUCCESSFUL")
             else:
-                print(f"Webhook request failed with status code {response.status_code}")
+                print(f"WEBHOOK POST REQUEST FAILED: {response.status_code}")
     except Exception as e:
-        print(f"Error sending acknowledgment: {str(e)}")
+        print(f"ERROR WHILE SETTING UP WEBHOOK POST REQUEST: {str(e)}")
 
 
 
