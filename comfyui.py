@@ -80,17 +80,16 @@ def get_images(ws, prompt):
         print(f"GENERATION COMPLETED: {completed}")
 
         if status == "success" and completed:
+            output_images = []
             for o in history['outputs']:
                 print(f"GOT OUTPUT: {o}")
                 node_output = history['outputs'][o]
                 print(f"NODE OUTPUT {node_output}")
                 if 'images' in node_output:
                     print("IMAGES FOUND IN NODE OUTPUT")
-                    images_output = []
                     for image in node_output['images']:
                         print(f"GOT AN IMAGE {image}")
-                        images_output.append(image['filename'])
-                    output_images[o] = images_output
+                        output_images.append(image['filename'])
                 else:
                     print("IMAGES NOT FOUND IN NODE OUTPUT")
 
@@ -111,36 +110,35 @@ def upload_images_to_s3(images):
     print("CONNECTED TO THE S3 CLIENT")
     s3_uris = []
 
-    for node_id in images:
-        print(f"GOT THE NODE: {node_id}")
-        for image_data in images[node_id]:
-            print(f"GOT THE IMAGE DATA: {image_data}")
+    for image_path in images:
+        print(f"GOT THE IMAGE PATH: {image_path}")
 
-            image_key = str(uuid.uuid4()) + '.png'
+        image_key = str(uuid.uuid4()) + '.png'
 
-            print(f"GOT THE IMAGE KEY: {image_key}")
+        print(f"GOT THE IMAGE KEY: {image_key}")
 
-            image_array = cv2.imdecode(np.frombuffer(image_data, np.uint8), cv2.IMREAD_UNCHANGED)
+        image_array = cv2.imdecode(np.frombuffer(image_path, np.uint8), cv2.IMREAD_UNCHANGED)
             
-            print(f"SAVING IMAGE ARRAY TO: {image_key}")
+        print(f"SAVING IMAGE ARRAY TO: {image_key}")
 
-            # Save the image as a PNG file
-            cv2.imwrite(image_key, image_array)
+        # Save the image as a PNG file
+        cv2.imwrite(image_key, image_array)
 
-            print("OPENING TMP SAVED IMAGE...")
-            with open(image_key, 'rb') as data:
-                print("OPENED IMAGE")
+        print("OPENING TMP SAVED IMAGE...")
+        with open(image_key, 'rb') as data:
+            print("OPENED IMAGE")
 
-                print("UPLOADING THE IMAGE TO S3")
-                s3_client.upload_fileobj(data, 'magicalcurie', image_key)
+            print("UPLOADING THE IMAGE TO S3")
+            s3_client.upload_fileobj(data, 'magicalcurie', image_key)
 
-            print(f"UPLOADED THE IMAGE to S3: " + f'https://magicalcurie.s3.amazonaws.com/{image_key}')
-            s3_uris.append(f'https://magicalcurie.s3.amazonaws.com/{image_key}')
+        print(f"UPLOADED THE IMAGE to S3: " + f'https://magicalcurie.s3.amazonaws.com/{image_key}')
+        s3_uris.append(f'https://magicalcurie.s3.amazonaws.com/{image_key}')
 
-            print("REMOVED THE LOCAL IMAGE FILE")
-            # Remove the local image file
-            os.remove(image_key)
+        print("REMOVED THE LOCAL IMAGE FILE")
+        # Remove the local image file
+        os.remove(image_key)
 
+    print(f"URIS FOR IMAGES UPLOADED TO S3: {s3_uris}")
     return s3_uris
 
 def download_and_save_images(
@@ -299,10 +297,13 @@ async def create_item(request: Request):
         ws = websocket.WebSocket()
         ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
         images = get_images(ws, workflow)
+        
+        if images:
+            s3_uris = upload_images_to_s3(images)
 
-        # s3_uris = upload_images_to_s3(images)
-
-        # await send_webhook_acknowledgment(user_id, message_id, settings_id, 'completed', webhook_url, s3_uris)
+            await send_webhook_acknowledgment(user_id, message_id, settings_id, 'completed', webhook_url, s3_uris)
+        else:
+            raise Exception("GENERATED NO IMAGES")
     except Exception as e:
         print(f"ERROR: {e}")
         await send_webhook_acknowledgment(user_id, message_id, settings_id, 'failed', webhook_url)
