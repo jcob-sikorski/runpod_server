@@ -66,24 +66,36 @@ def get_images(ws, prompt):
             print("IS NOT AN INSTANCE - CONTINUING POLLING")
             continue #previews are binary data
     
-    print("GETTING THE HISTORY FOR THE REQUESTED PROMPT")
-    history = get_history(prompt_id)[prompt_id]
-    for o in history['outputs']:
-        print(f"GOT OUTPUT: {o}")
-        node_output = history['outputs'][o]
-        print(f"NODE OUTPUT {node_output}")
-        if 'images' in node_output:
-            print("IMAGES FOUND IN NODE OUTPUT")
-            images_output = []
-            for image in node_output['images']:
-                print(f"GOT AN IMAGE {image}")
-                images_output.append(image['filename'])
-            output_images[o] = images_output
-        else:
-            print("IMAGES NOT FOUND IN NODE OUTPUT")
+    try:
+        print("GETTING THE HISTORY FOR THE REQUESTED PROMPT")
+        history = get_history(prompt_id)[prompt_id]
 
-    print(f"OUTPUT IMAGES: {output_images}")
-    return output_images
+        status = history['status']['status_str']
+        completed = history['status']['completed']
+
+        if status == "success" and completed:
+            for o in history['outputs']:
+                print(f"GOT OUTPUT: {o}")
+                node_output = history['outputs'][o]
+                print(f"NODE OUTPUT {node_output}")
+                if 'images' in node_output:
+                    print("IMAGES FOUND IN NODE OUTPUT")
+                    images_output = []
+                    for image in node_output['images']:
+                        print(f"GOT AN IMAGE {image}")
+                        images_output.append(image['filename'])
+                    output_images[o] = images_output
+                else:
+                    print("IMAGES NOT FOUND IN NODE OUTPUT")
+
+            print(f"OUTPUT IMAGES: {output_images}")
+            return output_images
+        else:
+            print(f"COULDN'T GENERATE IMAGES FOR PROMPT ID: {prompt_id}")
+    except json.JSONDecodeError as e:
+        print(f"JSON DECODE ERROR: {e}")
+    except Exception as e:
+        print(f"WHILE READING EXECUTION HISTORY EXCEPTION OCCURED: {e}")
 
 
 def upload_images_to_s3(images):
