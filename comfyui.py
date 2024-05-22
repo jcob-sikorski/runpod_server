@@ -70,22 +70,19 @@ def get_images(ws, prompt):
     history = get_history(prompt_id)[prompt_id]
     for o in history['outputs']:
         print(f"GOT OUTPUT: {o}")
-        for node_id in history['outputs']:
-            print(f"GOT NODE_ID {node_id}")
-            node_output = history['outputs'][node_id]
-            print(f"NODE OUTPUT {node_output}")
-            if 'images' in node_output:
-                print("IMAGES FOUND IN NODE OUPUT")
-                images_output = []
-                for image in node_output['images']:
-                    print(f"GOT AN IMAGE {image}")
-                    image_data = get_image(image['filename'], image['subfolder'], image['type'])
-                    images_output.append(image_data)
-            else:
-                print("IMAGES NOT FOUND IN NODE OUTPUT")
-            output_images[node_id] = images_output
+        node_output = history['outputs'][o]
+        print(f"NODE OUTPUT {node_output}")
+        if 'images' in node_output:
+            print("IMAGES FOUND IN NODE OUTPUT")
+            images_output = []
+            for image in node_output['images']:
+                print(f"GOT AN IMAGE {image}")
+                images_output.append(image['filename'])
+            output_images[o] = images_output
+        else:
+            print("IMAGES NOT FOUND IN NODE OUTPUT")
 
-    print("GOT THE IMAGES")
+    print(f"OUTPUT IMAGES: {output_images}")
     return output_images
 
 
@@ -285,9 +282,9 @@ async def create_item(request: Request):
         ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
         images = get_images(ws, workflow)
 
-        s3_uris = upload_images_to_s3(images)
+        # s3_uris = upload_images_to_s3(images)
 
-        await send_webhook_acknowledgment(user_id, message_id, settings_id, 'completed', webhook_url, s3_uris)
+        # await send_webhook_acknowledgment(user_id, message_id, settings_id, 'completed', webhook_url, s3_uris)
     except Exception as e:
         print(f"ERROR: {e}")
         await send_webhook_acknowledgment(user_id, message_id, settings_id, 'failed', webhook_url)
