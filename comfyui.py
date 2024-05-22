@@ -51,7 +51,7 @@ def get_history(prompt_id):
 def get_images(ws, prompt):
     print("QUEUEING PROMPT")
     prompt_id = queue_prompt(prompt)['prompt_id']
-    output_images = {}
+    raw_images_output = []
     while True:
         out = ws.recv()
         if isinstance(out, str):
@@ -80,7 +80,6 @@ def get_images(ws, prompt):
         print(f"GENERATION COMPLETED: {completed}")
 
         if status == "success" and completed:
-            output_images = []
             for o in history['outputs']:
                 print(f"GOT OUTPUT: {o}")
                 node_output = history['outputs'][o]
@@ -89,12 +88,13 @@ def get_images(ws, prompt):
                     print("IMAGES FOUND IN NODE OUTPUT")
                     for image in node_output['images']:
                         print(f"GOT AN IMAGE {image}")
-                        output_images.append(image['filename'])
+                        image_data = get_image(image['filename'], image['subfolder'], image['type'])
+
+                        raw_images_output.append(image_data)
                 else:
                     print("IMAGES NOT FOUND IN NODE OUTPUT")
 
-            print(f"OUTPUT IMAGES: {output_images}")
-            return output_images
+            return raw_images_output
         else:
             print(f"COULDN'T GENERATE IMAGES FOR PROMPT ID: {prompt_id}")
     except json.JSONDecodeError as e:
@@ -110,26 +110,31 @@ def upload_images_to_s3(images):
     print("CONNECTED TO THE S3 CLIENT")
     s3_uris = []
 
-    for filename in images:
-        print(f"GOT THE IMAGE PATH: {filename}")
+    for image_data in images:
+        image_key = str(uuid.uuid4()) + '.png'
 
-        temp_path = f"/workspace/LegitComfyUI/temp/{filename}"
+        print(f"GOT THE IMAGE KEY: {image_key}")
 
-        print(f"FULL IMAGE PATH: {temp_path}")
+        image_array = cv2.imdecode(np.frombuffer(image_data, np.uint8), cv2.IMREAD_UNCHANGED)
+            
+        print(f"SAVING IMAGE ARRAY TO: {image_key}")
+
+        # Save the image as a PNG file
+        cv2.imwrite(image_key, image_array)
 
         print("OPENING TMP SAVED IMAGE...")
-        with open(temp_path, 'rb') as data:
+        with open(image_key, 'rb') as data:
             print("OPENED IMAGE")
 
             print("UPLOADING THE IMAGE TO S3")
-            s3_client.upload_fileobj(data, 'magicalcurie', temp_path)
+            s3_client.upload_fileobj(data, 'magicalcurie', image_key)
 
-        print(f"UPLOADED THE IMAGE to S3: " + f'https://magicalcurie.s3.amazonaws.com/{filename}')
-        s3_uris.append(f'https://magicalcurie.s3.amazonaws.com/{filename}')
+        print(f"UPLOADED THE IMAGE to S3: " + f'https://magicalcurie.s3.amazonaws.com/{image_key}')
+        s3_uris.append(f'https://magicalcurie.s3.amazonaws.com/{image_key}')
 
         print("REMOVED THE LOCAL IMAGE FILE")
         # Remove the local image file
-        os.remove(temp_path)
+        os.remove(image_key)
 
     print(f"URIS FOR IMAGES UPLOADED TO S3: {s3_uris}")
     return s3_uris
