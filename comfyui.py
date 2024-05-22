@@ -113,30 +113,19 @@ def upload_images_to_s3(images):
     for image_path in images:
         print(f"GOT THE IMAGE PATH: {image_path}")
 
-        image_key = str(uuid.uuid4()) + '.png'
-
-        print(f"GOT THE IMAGE KEY: {image_key}")
-
-        image_array = cv2.imdecode(np.frombuffer(image_path, np.uint8), cv2.IMREAD_UNCHANGED)
-            
-        print(f"SAVING IMAGE ARRAY TO: {image_key}")
-
-        # Save the image as a PNG file
-        cv2.imwrite(image_key, image_array)
-
         print("OPENING TMP SAVED IMAGE...")
-        with open(image_key, 'rb') as data:
+        with open(image_path, 'rb') as data:
             print("OPENED IMAGE")
 
             print("UPLOADING THE IMAGE TO S3")
-            s3_client.upload_fileobj(data, 'magicalcurie', image_key)
+            s3_client.upload_fileobj(data, 'magicalcurie', image_path)
 
-        print(f"UPLOADED THE IMAGE to S3: " + f'https://magicalcurie.s3.amazonaws.com/{image_key}')
-        s3_uris.append(f'https://magicalcurie.s3.amazonaws.com/{image_key}')
+        print(f"UPLOADED THE IMAGE to S3: " + f'https://magicalcurie.s3.amazonaws.com/{image_path}')
+        s3_uris.append(f'https://magicalcurie.s3.amazonaws.com/{image_path}')
 
         print("REMOVED THE LOCAL IMAGE FILE")
         # Remove the local image file
-        os.remove(image_key)
+        os.remove(image_path)
 
     print(f"URIS FOR IMAGES UPLOADED TO S3: {s3_uris}")
     return s3_uris
