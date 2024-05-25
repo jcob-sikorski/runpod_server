@@ -8,9 +8,21 @@ from fastapi import FastAPI
 import uvicorn
 
 import comfyui
-# import facefusion
+import facefusion
 
-load_dotenv()
+# Determine the environment (default to production)
+env = os.getenv('ENV', 'production')
+
+# Map the environment to the corresponding .env file
+if env == 'development':
+    env_file = '.env.development'
+elif env == 'staging':
+    env_file = '.env.staging'
+else:
+    env_file = '.env.production'
+
+# Load the .env file
+load_dotenv(env_file)
 
 # Load AWS S3 Access keys from environment variables
 S3_ACCESS_KEY = os.getenv('S3_ACCESS_KEY')
@@ -23,7 +35,7 @@ boto3.setup_default_session(aws_access_key_id=S3_ACCESS_KEY,
 app = FastAPI()
 
 app.include_router(comfyui.router)
-# app.include_router(facefusion.router)
+app.include_router(facefusion.router)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
