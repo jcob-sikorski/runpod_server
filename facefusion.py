@@ -6,7 +6,7 @@ from fastapi import Request, APIRouter
 
 from uuid import uuid4
 
-import facefusion_utils
+import facefusion_utils as utils
 
 router = APIRouter(prefix="/facefusion")
 
@@ -86,26 +86,36 @@ async def generate_deepfake(request: Request):
     for _ in uris:
         file_ids.append(str(uuid4()))
 
-    await facefusion_utils.send_webhook_acknowledgment(user_id, job_id, 'in progress')
-
     try:
+        await utils.send_webhook_acknowledgment(user_id=user_id, 
+                                                job_id=job_id, 
+                                                status='in progress')
+    
         predefined_path = '/workspace/files/'
 
-        facefusion_utils.download_and_save_files(uris, file_ids, file_formats, predefined_path)
+        utils.download_and_save_files(uris, 
+                                      file_ids, 
+                                      file_formats, 
+                                      predefined_path)
 
         output_filename = run_facefusion(file_ids,
                                          file_formats,
                                          predefined_path)
 
         if output_filename:
-            s3_uri = facefusion_utils.upload_file_to_s3(predefined_path,
+            s3_uri = utils.upload_file_to_s3(predefined_path,
                                                         output_filename)
 
-            await facefusion_utils.send_webhook_acknowledgment(user_id, job_id, 'completed', s3_uri)
+            await utils.send_webhook_acknowledgment(user_id=user_id, 
+                                                    job_id=job_id, 
+                                                    status='completed', 
+                                                    output_url=s3_uri)
         else:
             raise Exception("GENERATED NO VIDEO DEEPFAKES")
     except Exception as e:
         print(e)
-        await facefusion_utils.send_webhook_acknowledgment(user_id, job_id, 'failed')
+        await utils.send_webhook_acknowledgment(user_id, job_id, 'failed')
 
-    facefusion_utils.remove_files(file_ids, file_formats, predefined_path)
+    utils.remove_files(file_ids, 
+                       file_formats, 
+                       predefined_path)

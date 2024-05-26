@@ -6,22 +6,9 @@ import httpx
 
 import requests
 
-from datetime import datetime
+from typing import List
 
-from pydantic import BaseModel, Field
-
-from typing import List, Optional
-
-class Message(BaseModel):
-    user_id: str
-    status: Optional[str] = None
-    uploadcare_uris: Optional[List[str]] = None # the last one is the target uri
-    created_at: Optional[str] = Field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    message_id: Optional[str] = None
-    # reference_face_distance: Optional[float] = None
-    # face_enhancer_model: Optional[str] = None
-    # frame_enhancer_blend: Optional[int] = None
-    s3_uris: Optional[List[str]] = None
+from interfaces import Message
 
 
 def download_and_save_files(uris: List[str], 
@@ -88,8 +75,6 @@ def upload_file_to_s3(predefined_path, filename):
 
     return s3_uri
 
-
-
 def remove_files(
         file_ids: List[str],
         file_formats: List[str],
@@ -120,15 +105,15 @@ def remove_files(
 
 async def send_webhook_acknowledgment(
         user_id: str, 
-        message_id: str, 
+        job_id: str, 
         status: str, 
-        s3_uri: str = None) -> None:
+        output_url: str = None) -> None:
     """
     Sends an acknowledgment message via webhook.
 
     Args:
         user_id (str): The unique identifier for the user.
-        message_id (str): The unique identifier for the message.
+        job_id (str): The unique identifier for the message.
         status (str): The status of the message.
         webhook_url (str): The URL of the webhook endpoint.
         s3_uri (str): The S3 URI associated with the message.
@@ -144,13 +129,13 @@ async def send_webhook_acknowledgment(
         # Create a dictionary to store the fields
         message_fields = {
             'user_id': user_id,
-            'message_id': message_id,
+            'job_id': job_id,
             'status': status
         }
 
-        if s3_uri is not None:
+        if output_url is not None:
             print("ADDING S3_URI FIELD TO MESSAGE MODEL")
-            message_fields['s3_uri'] = s3_uri
+            message_fields['output_url'] = output_url
 
         print("CREATING MESSAGE MODEL")
         # Create the Message object
