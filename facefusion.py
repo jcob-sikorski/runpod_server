@@ -14,8 +14,6 @@ router = APIRouter(prefix="/facefusion")
 def run_facefusion(file_ids, file_formats, predefined_path):
     print("INITIALIZING PYTHON COMMAND")
 
-    activate_env = "/workspace/miniconda3/bin activate facefusion"
-
     run_command = [
         "python3", "/workspace/miniconda3/envs/facefusion/run.py",
         "--headless",
@@ -48,15 +46,10 @@ def run_facefusion(file_ids, file_formats, predefined_path):
     # Complete the command with target and output paths
     run_command.extend([f"--target {target_path}", f"--output {output_path}"])
     
-    # Combine commands to run in the same subprocess
-    full_command = f"{activate_env} && " + " ".join(run_command)
-
-    print(full_command)
-    
     print("RUNNING THE PROCESS AND CALLING FACEFUSION")
     
     # Execute the full command within the Conda environment
-    subprocess.run(full_command, shell=True, check=True)
+    subprocess.run(run_command, shell=True, check=True)
 
     return output_path
 
