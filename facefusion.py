@@ -38,9 +38,11 @@ def run_facefusion(file_ids, file_formats, predefined_path):
         "--output-video-preset", "ultrafast"
     ]
 
-    sources = " ".join([os.path.join(predefined_path, f"{source_id}.{source_format}") for source_id, source_format in zip(file_ids[:-1], file_formats[:-1])])
+    # Create the sources list
+    source_path = os.path.join(predefined_path, f"{file_ids[0]}.{file_formats[0]}")
 
-    run_command.extend(["--source", sources])
+    # Extend the run_command list with the sources
+    run_command.extend(["--source", source_path])
 
     # The last file is assumed to be the target
     target_path = os.path.join(predefined_path, f"{file_ids[-1]}.{file_formats[-1]}")
@@ -96,8 +98,7 @@ async def generate_deepfake(request: Request):
                                          predefined_path)
 
         if output_filename:
-            s3_uri = facefusion_utils.upload_file_to_s3(predefined_path,
-                                                        output_filename)
+            s3_uri = facefusion_utils.upload_file_to_s3(predefined_path+output_filename)
 
             await facefusion_utils.send_webhook_acknowledgment(user_id, job_id, 'completed', s3_uri)
         else:
