@@ -106,7 +106,7 @@ async def create_item(request: Request):
     settings_id = payload.get('settings_id', {})
     user_id = payload.get('user_id', {})
 
-    webhook_url = f"{os.getenv('BACKEND_URL')}/image-generation/webhook"
+    webhook_url = f"{os.getenv('COMFYUI_BACKEND_URL')}/image-generation/webhook"
 
     print(image_formats)
 
