@@ -1,0 +1,25 @@
+# Use the official Python base image
+FROM python:3.10.10
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy the requirements file to the working directory
+COPY requirements.txt .
+
+# Install the Python dependencies
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+# Copy the application code to the working directory
+# Use .dockerignore file to ignore files and directories that aren't necessary
+COPY . .
+
+# Set environment variable
+ENV ENV=staging
+
+# Expose the port on which the application will run
+EXPOSE 8000
+
+# Use an array for the CMD instruction to ensure the process runs directly without being wrapped in a shell
+CMD ["fastapi", "run", "main.py", "--port", "8000"]
