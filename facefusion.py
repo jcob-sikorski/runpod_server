@@ -14,7 +14,7 @@ router = APIRouter(prefix="/facefusion")
 def run_facefusion(file_ids, file_formats, predefined_path):
     print("INITIALIZING PYTHON COMMAND")
 
-    activate_env = "conda activate facefusion"
+    activate_env = "/workspace/miniconda3/bin activate facefusion"
 
     run_command = [
         "python3", "/workspace/miniconda3/envs/facefusion/run.py",
