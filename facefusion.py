@@ -78,7 +78,7 @@ async def generate_deepfake(request: Request):
 
     file_ids = []
 
-    uris = source_uris.append(target_uri)
+    uris = source_uris + [target_uri]
 
     for _ in uris:
         file_ids.append(str(uuid4()))
