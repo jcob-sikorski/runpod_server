@@ -121,7 +121,7 @@ async def send_webhook_acknowledgment(
     Returns:
         None
     """
-    webhook_url = f"{os.getenv('FACEFUSION_BACKEND_URL')}/deepfake/facefusion-webhook"
+    webhook_url = f"{os.getenv('FACEFUSION_BACKEND_URL')}/facefusion-deepfake/webhook"
     
     print("SENDING WEBHOOK ACKNOWLEDGMENT")
     try:
