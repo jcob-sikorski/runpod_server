@@ -105,6 +105,7 @@ async def create_item(request: Request):
     message_id = payload.get('message_id', {})
     settings_id = payload.get('settings_id', {})
     user_id = payload.get('user_id', {})
+    refinement_enabled = payload.get('user_id', {})
 
     webhook_url = f"{os.getenv('COMFYUI_BACKEND_URL')}/image-generation/webhook"
 
@@ -122,6 +123,8 @@ async def create_item(request: Request):
         images = get_images(ws, workflow)
         
         if images:
+            if len(images) >= 2 and refinement_enabled:
+                images = images[len(images)//2:] if images else []
             s3_uris = comfyui_utils.upload_images_to_s3(images)
 
             await comfyui_utils.send_webhook_acknowledgment(user_id, message_id, settings_id, 'completed', webhook_url, s3_uris)
