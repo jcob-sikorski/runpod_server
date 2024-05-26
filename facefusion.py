@@ -70,6 +70,12 @@ async def generate_deepfake(request: Request):
     job_id = payload.get('job_id', {})
     user_id = payload.get('user_id', {})
 
+    print(f"Source URIs: {source_uris}")
+    print(f"Target URI: {target_uri}")
+    print(f"File Formats: {file_formats}")
+    print(f"Job ID: {job_id}")
+    print(f"User ID: {user_id}")
+
     file_ids = []
 
     uris = source_uris.append(target_uri)
