@@ -27,16 +27,17 @@ def run_facefusion(file_ids, file_formats, predefined_path):
     # Define the run command
     run_command = [
         "python3",
-        "run.py",  # Removed the absolute path since we changed the directory
+        "run.py",
         "--headless",
         "--execution-providers", "cuda",
-        "--execution-thread-count", "128",
-        "--execution-queue-count", "32",
+        "--execution-thread-count", "16",
+        "--execution-queue-count", "4",
         "--video-memory-strategy", "tolerant",
         "--frame-processors", "face_swapper", "face_enhancer",
-        "--reference-face-distance", "1.5",
+        "--reference-face-distance", "1.0",
         "--output-video-preset", "ultrafast"
     ]
+
 
     # Create the sources list
     source_path = os.path.join(predefined_path, f"{file_ids[0]}.{file_formats[0]}")
