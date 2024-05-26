@@ -35,7 +35,7 @@ def download_and_save_files(uris: List[str],
         file_format (str): The format of the files to be saved.
     """
     print(f"DOWNLOADING AND SAVING FILES FOR FACEFUSION")
-    for i in range(3):
+    for i in range(len(file_ids)):
         print(f"DOWNLOAD FOR FILE {i+1}...")
 
         file_uri = uris[i]
@@ -73,7 +73,7 @@ def remove_files(
         predefined_path (str): Predefined path where the files are stored.
     """
     print(f"REMOVING FILES")
-    for i in range(3):
+    for i in range(len(file_ids)):
         print(f"GETTING FILE ID")
         file_id = file_ids[i]
 
