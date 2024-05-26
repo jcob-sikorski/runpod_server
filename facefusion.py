@@ -15,7 +15,7 @@ def run_facefusion(file_ids, file_formats, predefined_path):
     print("INITIALIZING PYTHON COMMAND")
 
     run_command = [
-        "python3", "/workspace/miniconda3/envs/facefusion/run.py",
+        "python3", "/workspace/facefusion/run.py",
         "--headless",
         "--execution-providers cuda",
         "--execution-thread-count 128",
