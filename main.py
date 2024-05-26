@@ -10,12 +10,6 @@ import uvicorn
 import comfyui
 import facefusion
 
-import subprocess
-
-# Activate the facefusion environment using conda
-activation_command = "conda activate facefusion"
-subprocess.run(activation_command, shell=False, check=True)
-
 # Determine the environment (default to production)
 env = os.getenv('ENV', 'production')
 
