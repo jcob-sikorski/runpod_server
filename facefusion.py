@@ -1,4 +1,3 @@
-import uuid
 import os
 
 import subprocess
@@ -14,44 +13,53 @@ router = APIRouter(prefix="/facefusion")
 def run_facefusion(file_ids, file_formats, predefined_path):
     print("INITIALIZING PYTHON COMMAND")
 
+    conda_init_script = ["conda", "init", "bash"]
+    subprocess.run(conda_init_script, shell=False, check=True)
+
+    # Construct the command to activate the Conda environment
+    activate_command = ["/workspace/miniconda3/bin/activate", "facefusion"]
+
+    # Run the activation command
+    subprocess.run(activate_command, shell=False, check=True)
+
+    os.chdir("../facefusion")
+
+    # Define the run command
     run_command = [
-        "python3", "/workspace/facefusion/run.py",
+        "python3",
+        "run.py",  # Removed the absolute path since we changed the directory
         "--headless",
-        "--execution-providers cuda",
-        "--execution-thread-count 128",
-        "--execution-queue-count 32",
-        "--video-memory-strategy tolerant",
-        "--frame-processors face_swapper face_enhancer",
-        "--reference-face-distance 1.5",
-        "--output-video-preset ultrafast"
+        "--execution-providers", "cuda",
+        "--execution-thread-count", "128",
+        "--execution-queue-count", "32",
+        "--video-memory-strategy", "tolerant",
+        "--frame-processors", "face_swapper", "face_enhancer",
+        "--reference-face-distance", "1.5",
+        "--output-video-preset", "ultrafast"
     ]
 
+    sources = " ".join([os.path.join(predefined_path, f"{source_id}.{source_format}") for source_id, source_format in zip(file_ids[:-1], file_formats[:-1])])
 
-    sources = ""
-    for source_id, source_format in zip(file_ids[:-1], file_formats[:-1]):
-        source_path = os.path.join(predefined_path, f"{source_id}.{source_format}")
-        sources += source_path + " "
-
-    run_command.extend([f"--source {sources}"])
-
+    run_command.extend(["--source", sources])
 
     # The last file is assumed to be the target
     target_path = os.path.join(predefined_path, f"{file_ids[-1]}.{file_formats[-1]}")
 
     # Output file details
-    output_id = uuid.uuid4()
+    output_id = str(uuid4())
     output_format = file_formats[-1]  # Assuming output format is the same as the target's format
-    output_path = os.path.join(predefined_path, f"{output_id}.{output_format}")
+    filename = f"{output_id}.{output_format}"
+    output_path = os.path.join(predefined_path, filename)
 
     # Complete the command with target and output paths
-    run_command.extend([f"--target {target_path}", f"--output {output_path}"])
-    
+    run_command.extend(["--target", target_path, "--output", output_path])
+
     print("RUNNING THE PROCESS AND CALLING FACEFUSION")
-    
+
     # Execute the full command within the Conda environment
     subprocess.run(run_command, shell=False, check=True)
 
-    return output_path
+    return filename
 
 @router.post("/")
 async def generate_deepfake(request: Request):
@@ -83,12 +91,13 @@ async def generate_deepfake(request: Request):
 
         facefusion_utils.download_and_save_files(uris, file_ids, file_formats, predefined_path)
 
-        output_path = run_facefusion(file_ids,
-                                     file_formats,
-                                     predefined_path)
+        output_filename = run_facefusion(file_ids,
+                                         file_formats,
+                                         predefined_path)
 
-        if output_path:
-            s3_uri = facefusion_utils.upload_file_to_s3(output_path)
+        if output_filename:
+            s3_uri = facefusion_utils.upload_file_to_s3(predefined_path,
+                                                        output_filename)
 
             await facefusion_utils.send_webhook_acknowledgment(user_id, job_id, 'completed', s3_uri)
         else:

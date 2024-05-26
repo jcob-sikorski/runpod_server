@@ -2,9 +2,13 @@ import os
 import httpx
 import requests
 
+import cv2
+
 import boto3
 
 from datetime import datetime
+
+from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
@@ -90,24 +94,48 @@ def remove_files(
             print(f"FILE FOR REMOVAL NOT FOUND: {file_path}")
 
 
-def upload_file_to_s3(output_path):
+def upload_file_to_s3(predefined_path, filename):
     print("UPLOADING FILE TO S3")
     s3_client = boto3.client('s3')
 
     print("CONNECTED TO THE S3 CLIENT")
+    path = os.path.join(predefined_path, filename)
 
-    print("UPLOADING FILEOBJ TO S3")
-    # Open the file in binary mode
-    with open(output_path, 'rb') as data:
-        # Upload the file to S3
-        s3_client.upload_fileobj(data, 'magicalcurie', output_path)
+    # Check if the file exists
+    if not os.path.exists(path):
+        print(f"Error: The file {path} does not exist.")
+        return None
+
+    print(f"READING FILE FROM PATH: {path}")
+
+    # Read the file using OpenCV
+    image_array = cv2.imread(path)
+
+    if image_array is None:
+        print("Error: Failed to read the image from the specified path.")
+        return None
+
+    # Save the image as a temporary PNG file
+    temp_image_path = str(uuid.uuid4()) + '.png'
+    print(f"SAVING TEMPORARY IMAGE TO: {temp_image_path}")
+    cv2.imwrite(temp_image_path, image_array)
+
+    print("UPLOADING TEMPORARY FILE TO S3")
+    # Open the temporary file in binary mode
+    with open(temp_image_path, 'rb') as data:
+        # Upload the temporary file to S3
+        s3_client.upload_fileobj(data, 'magicalcurie', temp_image_path)
+
+    print(f"FILE UPLOADED TO S3: {temp_image_path}")
+
+    # Remove the temporary file
+    os.remove(temp_image_path)
+    print(f"REMOVED TEMPORARY FILE: {temp_image_path}")
 
     # Construct the S3 URI
-    s3_uri = f"{os.getenvb('S3_URI')}/{output_path}"
+    s3_uri = f"{os.getenv('S3_URI')}/{temp_image_path}"
 
-    print("REMOVING THE LOCAL FILE")
-    # Remove the local file
-    os.remove(output_path)
+    print(f"RETURNING S3 URI: {s3_uri}")
 
     return s3_uri
 
