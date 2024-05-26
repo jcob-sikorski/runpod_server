@@ -49,7 +49,7 @@ def run_facefusion(file_ids, file_formats, predefined_path):
     print("RUNNING THE PROCESS AND CALLING FACEFUSION")
     
     # Execute the full command within the Conda environment
-    subprocess.run(run_command, shell=True, check=True)
+    subprocess.run(run_command, shell=False, check=True)
 
     return output_path
 
