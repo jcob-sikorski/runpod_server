@@ -98,7 +98,8 @@ async def generate_deepfake(request: Request):
                                          predefined_path)
 
         if output_filename:
-            s3_uri = facefusion_utils.upload_file_to_s3(predefined_path+output_filename)
+            s3_uri = facefusion_utils.upload_file_to_s3(predefined_path,
+                                                        output_filename)
 
             await facefusion_utils.send_webhook_acknowledgment(user_id, job_id, 'completed', s3_uri)
         else:
