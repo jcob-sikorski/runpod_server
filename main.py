@@ -10,19 +10,8 @@ import uvicorn
 import comfyui
 import facefusion
 
-# Determine the environment (default to production)
-env = os.getenv('ENV', 'production')
-
-# Map the environment to the corresponding .env file
-if env == 'development':
-    env_file = '.env.development'
-elif env == 'staging':
-    env_file = '.env.staging'
-else:
-    env_file = '.env.production'
-
 # Load the .env file
-load_dotenv(env_file)
+load_dotenv()
 
 # Load AWS S3 Access keys from environment variables
 S3_ACCESS_KEY = os.getenv('S3_ACCESS_KEY')
