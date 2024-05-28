@@ -73,36 +73,6 @@ def fast_upload(session, bucketname, s3dir, file, progress_func, workers=20):
     
     s3t.shutdown()  # wait for all the upload tasks to finish
 
-
-def upload_file_to_s3(predefined_path, filename):
-    print("UPLOADING FILE TO S3")
-
-    # Initialize the S3 client
-    s3_client = boto3.client('s3')
-    print("CONNECTED TO THE S3 CLIENT")
-
-    path = os.path.join(predefined_path, filename)
-
-    # Define transfer configuration
-    config = TransferConfig(
-        multipart_threshold=5 * 1024 * 1024,  # 5MB threshold
-        max_concurrency=10,  # Maximum number of threads for parallel uploads
-        multipart_chunksize=5 * 1024 * 1024,  # Size of each part for multipart upload
-        use_threads=True
-    )
-
-    try:
-        with open(path, 'rb') as data:
-            print("UPLOADING THE IMAGE")
-            s3_client.upload_fileobj(data, 'magicalcurie', filename, Config=config)
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        raise
-
-    # Construct the S3 URI
-    s3_uri = f"{os.getenv('S3_URI')}/{filename}"
-    return s3_uri
-
 def remove_files(
         file_ids: List[str],
         file_formats: List[str],
