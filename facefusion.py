@@ -108,9 +108,6 @@ async def generate_deepfake(request: Request):
                                          predefined_path)
 
         if output_filename:
-            s3_uri = utils.upload_file_to_s3(predefined_path,
-                                             output_filename)
-            
             bucketname = 'magicalcurie'
             s3dir = '/'
             file = predefined_path+output_filename
@@ -123,7 +120,7 @@ async def generate_deepfake(request: Request):
             await utils.send_webhook_acknowledgment(user_id=user_id, 
                                                     job_id=job_id, 
                                                     status='completed', 
-                                                    output_url=s3_uri)
+                                                    output_url=f"{os.getenv('S3_URI')}/{file}")
         else:
             raise Exception("GENERATED NO VIDEO DEEPFAKES")
     except Exception as e:
