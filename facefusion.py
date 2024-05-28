@@ -8,6 +8,10 @@ from uuid import uuid4
 
 import facefusion_utils as utils
 
+import boto3
+
+from tqdm import tqdm
+
 router = APIRouter(prefix="/facefusion")
 
 def run_facefusion(file_ids, file_formats, predefined_path):
@@ -106,6 +110,15 @@ async def generate_deepfake(request: Request):
         if output_filename:
             s3_uri = utils.upload_file_to_s3(predefined_path,
                                              output_filename)
+            
+            bucketname = 'magicalcurie'
+            s3dir = '/'
+            file = predefined_path+output_filename
+            totalsize = os.stat(file).st_size
+
+            with tqdm(desc='upload', ncols=60,
+                    total=totalsize, unit='B', unit_scale=1) as pbar:
+                utils.fast_upload(boto3.Session(), bucketname, s3dir, file, pbar.update)
 
             await utils.send_webhook_acknowledgment(user_id=user_id, 
                                                     job_id=job_id, 

@@ -7,8 +7,8 @@ import httpx
 import requests
 
 import boto3
-
-from boto3.s3.transfer import TransferConfig
+import botocore
+import boto3.s3.transfer as s3transfer
 
 from interfaces import Message
 
@@ -53,6 +53,25 @@ def download_and_save_files(uris: List[str],
                     file.write(chunk)  # Write each chunk to the file
 
             print(f"SAVED FILE TO {file_path}")
+
+def fast_upload(session, bucketname, s3dir, file, progress_func, workers=20):
+    botocore_config = botocore.config.Config(max_pool_connections=workers)
+    s3client = session.client('s3', config=botocore_config)
+    transfer_config = s3transfer.TransferConfig(
+        use_threads=True,
+        max_concurrency=workers,
+    )
+    s3t = s3transfer.create_transfer_manager(s3client, transfer_config)
+    
+    dst = os.path.join(s3dir, os.path.basename(file))
+    s3t.upload(
+        file, bucketname, dst,
+        subscribers=[
+            s3transfer.ProgressCallbackInvoker(progress_func),
+        ],
+    )
+    
+    s3t.shutdown()  # wait for all the upload tasks to finish
 
 
 def upload_file_to_s3(predefined_path, filename):
