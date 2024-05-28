@@ -1,4 +1,4 @@
-import boto3
+from typing import List
 
 import os
 
@@ -6,7 +6,9 @@ import httpx
 
 import requests
 
-from typing import List
+import boto3
+
+from boto3.s3.transfer import TransferConfig
 
 from interfaces import Message
 
@@ -55,21 +57,31 @@ def download_and_save_files(uris: List[str],
 
 def upload_file_to_s3(predefined_path, filename):
     print("UPLOADING FILE TO S3")
+
     # Initialize the S3 client
     s3_client = boto3.client('s3')
     print("CONNECTED TO THE S3 CLIENT")
 
-    print("UPLOADING FILEOBJ TO S3")
     path = os.path.join(predefined_path, filename)
 
-    # Open the file in binary mode and upload it directly
-    with open(path, 'rb') as data:
-        print("UPLOADING THE IMAGE")
-        s3_client.upload_fileobj(data, 'magicalcurie', filename)
+    # Define transfer configuration
+    config = TransferConfig(
+        multipart_threshold=5 * 1024 * 1024,  # 5MB threshold
+        max_concurrency=10,  # Maximum number of threads for parallel uploads
+        multipart_chunksize=5 * 1024 * 1024,  # Size of each part for multipart upload
+        use_threads=True
+    )
+
+    try:
+        with open(path, 'rb') as data:
+            print("UPLOADING THE IMAGE")
+            s3_client.upload_fileobj(data, 'magicalcurie', filename, Config=config)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        raise
 
     # Construct the S3 URI
     s3_uri = f"{os.getenv('S3_URI')}/{filename}"
-
     return s3_uri
 
 def remove_files(
