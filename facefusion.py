@@ -105,7 +105,7 @@ async def generate_deepfake(request: Request):
 
         if output_filename:
             s3_uri = utils.upload_file_to_s3(predefined_path,
-                                                        output_filename)
+                                             output_filename)
 
             await utils.send_webhook_acknowledgment(user_id=user_id, 
                                                     job_id=job_id, 
