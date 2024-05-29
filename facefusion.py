@@ -109,16 +109,14 @@ async def generate_deepfake(request: Request):
 
         if output_filename:
             bucketname = 'magicalcurie'
-            s3dir = '/'
-            file = predefined_path+output_filename
-            totalsize = os.stat(file).st_size
+            file_path = predefined_path+output_filename
+            totalsize = os.stat(file_path).st_size
 
             with tqdm(desc='upload', ncols=60,
                     total=totalsize, unit='B', unit_scale=1) as pbar:
                 utils.fast_upload(boto3.Session(), 
                                   bucketname, 
-                                  s3dir, 
-                                  file, 
+                                  file_path, 
                                   output_filename, 
                                   pbar.update)
 
