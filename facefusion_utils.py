@@ -69,18 +69,12 @@ def fast_upload(session,
         multipart_chunksize=5 * 1024 * 1024,  # 5MB chunksize
     )
     s3t = s3transfer.create_transfer_manager(s3client, transfer_config)
-    
-    s3_dir = "/"
 
-    dst = os.path.join(s3_dir, os.path.basename(filename))
-
-    print("DST", dst)
-    print("S3 DIR", s3_dir)
     print("FILENAME: ", filename)
     print("PATH TO THE FILE: ", file_path)
     
     s3t.upload(
-        file_path, bucketname, dst,
+        file_path, bucketname, filename,
         subscribers=[
             s3transfer.ProgressCallbackInvoker(progress_func),
         ],
