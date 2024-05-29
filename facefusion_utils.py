@@ -56,6 +56,7 @@ def download_and_save_files(uris: List[str],
 
 def fast_upload(session, 
                 bucketname, 
+                s3_dir,
                 file_path,
                 filename, 
                 progress_func, 
@@ -68,7 +69,7 @@ def fast_upload(session,
     )
     s3t = s3transfer.create_transfer_manager(s3client, transfer_config)
     
-    s3_dir = "/cupidai/deepfakes/"
+
 
     dst = os.path.join(s3_dir, os.path.basename(filename))
 

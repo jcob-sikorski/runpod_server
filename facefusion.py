@@ -111,11 +111,13 @@ async def generate_deepfake(request: Request):
             bucketname = 'magicalcurie'
             file_path = predefined_path+output_filename
             totalsize = os.stat(file_path).st_size
+            s3_dir = "/cupidai/deepfakes/"
 
             with tqdm(desc='upload', ncols=60,
                     total=totalsize, unit='B', unit_scale=1) as pbar:
                 utils.fast_upload(boto3.Session(), 
                                   bucketname, 
+                                  s3_dir,
                                   file_path, 
                                   output_filename, 
                                   pbar.update)
@@ -123,7 +125,7 @@ async def generate_deepfake(request: Request):
             await utils.send_webhook_acknowledgment(user_id=user_id, 
                                                     job_id=job_id, 
                                                     status='completed', 
-                                                    output_url=f"{os.getenv('CDN_URL')}/{output_filename}")
+                                                    output_url=f"{os.getenv('CDN_URL')}{s3_dir}{output_filename}")
         else:
             raise Exception("GENERATED NO VIDEO DEEPFAKES")
     except Exception as e:
