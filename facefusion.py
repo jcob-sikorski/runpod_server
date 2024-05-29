@@ -120,7 +120,7 @@ async def generate_deepfake(request: Request):
             await utils.send_webhook_acknowledgment(user_id=user_id, 
                                                     job_id=job_id, 
                                                     status='completed', 
-                                                    output_url=f"{os.getenv('CDN_URL')}/{file}")
+                                                    output_url=f"{os.getenv('CDN_URL')}/{output_filename}")
         else:
             raise Exception("GENERATED NO VIDEO DEEPFAKES")
     except Exception as e:
