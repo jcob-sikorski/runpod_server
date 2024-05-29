@@ -65,6 +65,8 @@ def fast_upload(session,
     transfer_config = s3transfer.TransferConfig(
         use_threads=True,
         max_concurrency=workers,
+        multipart_threshold=5 * 1024 * 1024,  # 5MB threshold for multipart uploads
+        multipart_chunksize=5 * 1024 * 1024,  # 5MB chunksize
     )
     s3t = s3transfer.create_transfer_manager(s3client, transfer_config)
     
