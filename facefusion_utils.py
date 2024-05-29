@@ -59,7 +59,7 @@ def fast_upload(session,
                 file_path,
                 filename, 
                 progress_func, 
-                workers=20):
+                workers=40):
     botocore_config = botocore.config.Config(max_pool_connections=workers)
     s3client = session.client('s3', config=botocore_config)
     transfer_config = s3transfer.TransferConfig(
