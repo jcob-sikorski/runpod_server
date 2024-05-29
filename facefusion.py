@@ -115,7 +115,12 @@ async def generate_deepfake(request: Request):
 
             with tqdm(desc='upload', ncols=60,
                     total=totalsize, unit='B', unit_scale=1) as pbar:
-                utils.fast_upload(boto3.Session(), bucketname, s3dir, file, pbar.update)
+                utils.fast_upload(boto3.Session(), 
+                                  bucketname, 
+                                  s3dir, 
+                                  file, 
+                                  output_filename, 
+                                  pbar.update)
 
             await utils.send_webhook_acknowledgment(user_id=user_id, 
                                                     job_id=job_id, 

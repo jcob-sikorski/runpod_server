@@ -54,7 +54,13 @@ def download_and_save_files(uris: List[str],
 
             print(f"SAVED FILE TO {file_path}")
 
-def fast_upload(session, bucketname, s3dir, file, progress_func, workers=20):
+def fast_upload(session, 
+                bucketname, 
+                s3dir, 
+                file, 
+                filename, 
+                progress_func, 
+                workers=20):
     botocore_config = botocore.config.Config(max_pool_connections=workers)
     s3client = session.client('s3', config=botocore_config)
     transfer_config = s3transfer.TransferConfig(
@@ -63,7 +69,7 @@ def fast_upload(session, bucketname, s3dir, file, progress_func, workers=20):
     )
     s3t = s3transfer.create_transfer_manager(s3client, transfer_config)
     
-    dst = os.path.join(s3dir, os.path.basename(file))
+    dst = os.path.join(s3dir, os.path.basename(filename))
     s3t.upload(
         file, bucketname, dst,
         subscribers=[
