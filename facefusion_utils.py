@@ -56,8 +56,7 @@ def download_and_save_files(uris: List[str],
 
 def fast_upload(session, 
                 bucketname, 
-                s3dir, 
-                file, 
+                predefined_path,
                 filename, 
                 progress_func, 
                 workers=20):
@@ -69,16 +68,19 @@ def fast_upload(session,
     )
     s3t = s3transfer.create_transfer_manager(s3client, transfer_config)
     
+    s3_dir = "/"
 
-    dst = os.path.join(s3dir, os.path.basename(filename))
+    dst = os.path.join(s3_dir, os.path.basename(filename))
 
-    print("FILE: ", file)
+    path = predefined_path + filename
+
     print("DST", dst)
-    print("S3 DIR", s3dir)
+    print("S3 DIR", s3_dir)
     print("FILENAME: ", filename)
+    print("PATH TO THE FILE: ", path)
     
     s3t.upload(
-        file, bucketname, dst,
+        path, bucketname, dst,
         subscribers=[
             s3transfer.ProgressCallbackInvoker(progress_func),
         ],
