@@ -69,7 +69,14 @@ def fast_upload(session,
     )
     s3t = s3transfer.create_transfer_manager(s3client, transfer_config)
     
+
     dst = os.path.join(s3dir, os.path.basename(filename))
+
+    print("FILE: ", file)
+    print("DST", dst)
+    print("S3 DIR", s3dir)
+    print("FILENAME: ", filename)
+    
     s3t.upload(
         file, bucketname, dst,
         subscribers=[
