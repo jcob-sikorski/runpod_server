@@ -68,7 +68,7 @@ def fast_upload(session,
     )
     s3t = s3transfer.create_transfer_manager(s3client, transfer_config)
     
-    s3_dir = "/"
+    s3_dir = "/cupidai/deepfakes/"
 
     dst = os.path.join(s3_dir, os.path.basename(filename))
 
