@@ -60,27 +60,40 @@ def fast_upload(session,
                 filename, 
                 progress_func, 
                 workers=40):
-    botocore_config = botocore.config.Config(max_pool_connections=workers)
-    s3client = session.client('s3', config=botocore_config)
-    transfer_config = s3transfer.TransferConfig(
-        use_threads=True,
-        max_concurrency=workers,
-        multipart_threshold=5 * 1024 * 1024,  # 5MB threshold for multipart uploads
-        multipart_chunksize=5 * 1024 * 1024,  # 5MB chunksize
-    )
-    s3t = s3transfer.create_transfer_manager(s3client, transfer_config)
+    try:
+        botocore_config = botocore.config.Config(max_pool_connections=workers)
+        s3client = session.client('s3', config=botocore_config)
+        transfer_config = s3transfer.TransferConfig(
+            use_threads=True,
+            max_concurrency=workers,
+            multipart_threshold=5 * 1024 * 1024,  # 5MB threshold for multipart uploads
+            multipart_chunksize=5 * 1024 * 1024,  # 5MB chunksize
+        )
+        s3t = s3transfer.create_transfer_manager(s3client, transfer_config)
 
-    print("FILENAME: ", filename)
-    print("PATH TO THE FILE: ", file_path)
-    
-    s3t.upload(
-        file_path, bucketname, filename,
-        subscribers=[
-            s3transfer.ProgressCallbackInvoker(progress_func),
-        ],
-    )
-    
-    s3t.shutdown()  # wait for all the upload tasks to finish
+        print(f"FILENAME: {filename}")
+        print(f"PATH TO THE FILE: {file_path}")
+        
+        # Check if file exists
+        if not os.path.isfile(file_path):
+            print(f"The file {file_path} does not exist.")
+            return
+
+        future = s3t.upload(
+            file_path, bucketname, filename,
+            subscribers=[
+                s3transfer.ProgressCallbackInvoker(progress_func),
+            ],
+        )
+        
+        future.result()  # wait for the upload to complete
+        
+        s3t.shutdown()  # wait for all the upload tasks to finish
+        print("Upload completed successfully.")
+    except botocore.exceptions.ClientError as error:
+        print(f"An error occurred: {error}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
 
 def remove_files(
         file_ids: List[str],

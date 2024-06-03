@@ -109,16 +109,25 @@ async def generate_deepfake(request: Request):
 
         if output_filename:
             bucketname = 'magicalcurie'
-            file_path = predefined_path+output_filename
-            totalsize = os.stat(file_path).st_size
+            file_path = os.path.join(predefined_path, output_filename)
 
-            with tqdm(desc='upload', ncols=60,
-                    total=totalsize, unit='B', unit_scale=1) as pbar:
-                utils.fast_upload(boto3.Session(), 
-                                  bucketname, 
-                                  file_path, 
-                                  output_filename, 
-                                  pbar.update)
+            try:
+                totalsize = os.stat(file_path).st_size
+            except FileNotFoundError:
+                print(f"The file {file_path} does not exist.")
+                totalsize = 0
+                
+            if totalsize > 0:
+                with tqdm(desc='upload', ncols=60, total=totalsize, unit='B', unit_scale=True) as pbar:
+                    # Create a session with explicit credentials (for testing)
+                    session = boto3.Session(
+                        aws_access_key_id=os.getenv("S3_ACCESS_KEY"),
+                        aws_secret_access_key=os.getenv("S3_SECRET_ACCESS_KEY"),
+                        region_name='us-east-1'
+                    )
+                    utils.fast_upload(session, bucketname, file_path, output_filename, pbar.update)
+            else:
+                print(f"Upload aborted due to file size being 0 or file not found.")
 
             await utils.send_webhook_acknowledgment(user_id=user_id, 
                                                     job_id=job_id, 
