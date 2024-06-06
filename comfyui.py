@@ -96,42 +96,46 @@ def get_images(ws, prompt):
 
 
 @router.post("/")
-async def create_item(request: Request):
+async def generate(request: Request):
     payload = await request.json() 
     workflow = payload.get('workflow', {})
     uploadcare_uris = payload.get('uploadcare_uris', {})
     image_ids = payload.get('image_ids', {})
     image_formats = payload.get('image_formats', {})
     message_id = payload.get('message_id', {})
-    settings_id = payload.get('settings_id', {})
     user_id = payload.get('user_id', {})
-    refinement_enabled = payload.get('user_id', {})
 
     webhook_url = f"{os.getenv('COMFYUI_BACKEND_URL')}/image-generation/webhook"
 
     print(image_formats)
 
-    await comfyui_utils.send_webhook_acknowledgment(user_id, message_id, settings_id, 'in progress', webhook_url)
+    await comfyui_utils.send_webhook_acknowledgment(user_id, 
+                                                    message_id, 
+                                                    'in progress', 
+                                                    webhook_url)
 
     try:
         predefined_path = '/workspace/images/'
 
-        comfyui_utils.download_and_save_images(uploadcare_uris, image_ids, image_formats, predefined_path)
+        comfyui_utils.download_and_save_images(uploadcare_uris, 
+                                               image_ids, 
+                                               image_formats, 
+                                               predefined_path)
 
         ws = websocket.WebSocket()
         ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
         images = get_images(ws, workflow)
         
         if images:
-            if len(images) >= 2 and refinement_enabled:
-                images = images[len(images)//2:] if images else []
+            # if len(images) >= 2:
+            #     images = images[len(images)//2:] if images else []
             s3_uris = comfyui_utils.upload_images_to_s3(images)
 
-            await comfyui_utils.send_webhook_acknowledgment(user_id, message_id, settings_id, 'completed', webhook_url, s3_uris)
+            await comfyui_utils.send_webhook_acknowledgment(user_id, message_id, 'completed', webhook_url, s3_uris)
         else:
             raise Exception("GENERATED NO IMAGES")
     except Exception as e:
         print(f"ERROR: {e}")
-        await comfyui_utils.send_webhook_acknowledgment(user_id, message_id, settings_id, 'failed', webhook_url)
+        await comfyui_utils.send_webhook_acknowledgment(user_id, message_id, 'failed', webhook_url)
 
     comfyui_utils.remove_images(image_ids, image_formats, predefined_path)

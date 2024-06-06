@@ -126,7 +126,6 @@ class Message(BaseModel):
 
 async def send_webhook_acknowledgment(user_id: str, 
                                       message_id: str, 
-                                      settings_id: str, 
                                       status: str, 
                                       webhook_url: str, 
                                       s3_uris: Optional[List[str]] = None) -> None:
@@ -149,7 +148,6 @@ async def send_webhook_acknowledgment(user_id: str,
         message_fields = {
             'user_id': user_id,
             'message_id': message_id,
-            'settings_id': settings_id,
             'status': status
         }
 
