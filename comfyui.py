@@ -73,18 +73,19 @@ def get_images(ws, prompt):
 
         if status == "success" and completed:
             for o in history['outputs']:
-                print(f"GOT OUTPUT: {o}")
-                node_output = history['outputs'][o]
-                print(f"NODE OUTPUT {node_output}")
-                if 'images' in node_output:
-                    print("IMAGES FOUND IN NODE OUTPUT")
-                    for image in node_output['images']:
-                        print(f"GOT AN IMAGE {image}")
-                        image_data = get_image(image['filename'], image['subfolder'], image['type'])
+                if o == "252":
+                    print(f"GOT OUTPUT: {o}")
+                    node_output = history['outputs'][o]
+                    print(f"NODE OUTPUT {node_output}")
+                    if 'images' in node_output:
+                        print("IMAGES FOUND IN NODE OUTPUT")
+                        for image in node_output['images']:
+                            print(f"GOT AN IMAGE {image}")
+                            image_data = get_image(image['filename'], image['subfolder'], image['type'])
 
-                        raw_images_output.append(image_data)
-                else:
-                    print("IMAGES NOT FOUND IN NODE OUTPUT")
+                            raw_images_output.append(image_data)
+                    else:
+                        print("IMAGES NOT FOUND IN NODE OUTPUT")
 
             return raw_images_output
         else:
@@ -99,15 +100,14 @@ def get_images(ws, prompt):
 async def generate(request: Request):
     payload = await request.json() 
     workflow = payload.get('workflow', {})
-    uploadcare_uris = payload.get('uploadcare_uris', {})
-    image_ids = payload.get('image_ids', {})
-    image_formats = payload.get('image_formats', {})
+    reference_image_url = payload.get('reference_image_url', {})
+    reference_image_path = payload.get('reference_image_path', {})
+    controlnet_reference_image_url = payload.get('controlnet_reference_image_url', {})
+    controlnet_reference_image_path = payload.get('controlnet_reference_image_path', {})
     message_id = payload.get('message_id', {})
     user_id = payload.get('user_id', {})
 
     webhook_url = f"{os.getenv('COMFYUI_BACKEND_URL')}/image-generation/webhook"
-
-    print(image_formats)
 
     await comfyui_utils.send_webhook_acknowledgment(user_id, 
                                                     message_id, 
@@ -115,12 +115,10 @@ async def generate(request: Request):
                                                     webhook_url)
 
     try:
-        predefined_path = '/workspace/images/'
+        bundle = [(reference_image_url, reference_image_path), 
+                  (controlnet_reference_image_url, controlnet_reference_image_path)]
 
-        comfyui_utils.download_and_save_images(uploadcare_uris, 
-                                               image_ids, 
-                                               image_formats, 
-                                               predefined_path)
+        comfyui_utils.download_and_save_images(bundle)
 
         ws = websocket.WebSocket()
         ws.connect("ws://{}/ws?clientId={}".format(server_address, client_id))
@@ -131,11 +129,20 @@ async def generate(request: Request):
             #     images = images[len(images)//2:] if images else []
             s3_uris = comfyui_utils.upload_images_to_s3(images)
 
-            await comfyui_utils.send_webhook_acknowledgment(user_id, message_id, 'completed', webhook_url, s3_uris)
+            await comfyui_utils.send_webhook_acknowledgment(user_id, 
+                                                            message_id, 
+                                                            'completed', 
+                                                            webhook_url, 
+                                                            s3_uris)
         else:
             raise Exception("GENERATED NO IMAGES")
     except Exception as e:
         print(f"ERROR: {e}")
-        await comfyui_utils.send_webhook_acknowledgment(user_id, message_id, 'failed', webhook_url)
+        await comfyui_utils.send_webhook_acknowledgment(user_id, 
+                                                        message_id, 
+                                                        'failed', 
+                                                        webhook_url)
 
-    comfyui_utils.remove_images(image_ids, image_formats, predefined_path)
+    # comfyui_utils.remove_images(reference_image_path, 
+    #                             controlnet_reference_image_path, 
+    #                             predefined_path)
