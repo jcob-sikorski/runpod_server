@@ -73,7 +73,7 @@ def get_images(ws, prompt):
 
         if status == "success" and completed:
             for o in history['outputs']:
-                if o == "252":
+                if o == "246":
                     print(f"GOT OUTPUT: {o}")
                     node_output = history['outputs'][o]
                     print(f"NODE OUTPUT {node_output}")
